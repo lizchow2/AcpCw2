@@ -2,7 +2,7 @@
   <configuration default="false" name="Dockerfile" type="docker-deploy" factoryName="dockerfile" server-name="Docker">
     <deployment type="dockerfile">
       <settings>
-        <option name="containerName" value="s9999999" />
+        <option name="containerName" value="s2814142" />
         <option name="portBindings">
           <list>
             <DockerPortBindingImpl>
