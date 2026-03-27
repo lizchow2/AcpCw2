@@ -24,18 +24,20 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   rabbitmq:
-    image: rabbitmq:latest
-    networks:
-      - acp_network
-    ports:
-      - "5672:5672"
-
-  rabbitmq-management:
+#    image: rabbitmq:latest
     image: rabbitmq:4.0-management
     networks:
       - acp_network
     ports:
+      - "5672:5672"
       - "15672:15672"
+
+#  rabbitmq-management:
+#    image: rabbitmq:4.0-management
+#    networks:
+#      - acp_network
+#    ports:
+#      - "15672:15672"
 
   redis:
     image: redis/redis-stack:latest
@@ -47,4 +49,5 @@ services:
 
 networks:
   acp_network:
-    external: true
+#    external: true
+    driver: bridge
