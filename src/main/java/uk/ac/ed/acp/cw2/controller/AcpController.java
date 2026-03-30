@@ -246,9 +246,9 @@ public class AcpController {
         String writeQueue = (String) body.get("writeQueue");
         int messageCount = ((Number) body.get("messageCount")).intValue();
         log.info("POST transformMessages -> readQueue={} writeQueue={} count={}", readQueue, writeQueue, messageCount);
-        int totalProcessed = 0;
+        int totalAdded10 = 0;
         int totalWritten = 0;
-        int totalRedisUpdates = 0;
+        int tombstoneCount = 0;
         double totalValue = 0.0;
         double totalAdded = 0.0;
 
@@ -272,22 +272,22 @@ public class AcpController {
                 }
                 String raw = new String(delivery.getBody(), StandardCharsets.UTF_8);
                 JsonObject obj = JsonParser.parseString(raw).getAsJsonObject();
-                totalProcessed++;
                 String key = obj.get("key").getAsString();
                 if("TOMBSTONE".equals(key)){
-                    log.info("TOMBSTONE hit at message {}", totalProcessed);
+                    tombstoneCount++;
+                    log.info("TOMBSTONE hit, tombstoneCount={}", tombstoneCount);
                     for (String k : redisKeys) {
                         jedis.del(k);
                     }
                     redisKeys.clear();
+                    totalWritten++;
                     JsonObject stats = new JsonObject();
                     stats.addProperty("totalMessagesWritten", totalWritten);
-                    stats.addProperty("totalMessagesProcessed", totalProcessed);
-                    stats.addProperty("totalRedisUpdates", totalRedisUpdates);
+                    stats.addProperty("totalMessagesProcessed", totalAdded10);
+                    stats.addProperty("totalRedisUpdates", totalAdded10 + tombstoneCount);
                     stats.addProperty("totalValueWritten", totalValue);
                     stats.addProperty("totalAdded", totalAdded);
                     writeChannel.basicPublish("", writeQueue, null, gson.toJson(stats).getBytes(StandardCharsets.UTF_8));
-                    totalWritten++;
                     log.info("TOMBSTONE stats written: {}", gson.toJson(stats));
                 } else {
                     int version = obj.get("version").getAsInt();
@@ -298,7 +298,7 @@ public class AcpController {
                     if(storedVersion < version){
                         jedis.set(key, String.valueOf(version));
                         redisKeys.add(key);
-                        totalRedisUpdates++;
+                        totalAdded10++;
                         JsonObject out = new JsonObject();
                         out.addProperty("key", key);
                         out.addProperty("version", version);
@@ -316,7 +316,7 @@ public class AcpController {
                     totalWritten++;
                 }
             }
-            log.info("POST transformMessages done -> processed={} written={} redisUpdates={}", totalProcessed, totalWritten, totalRedisUpdates);
+            log.info("POST transformMessages done -> processed={} written={} redisUpdates={}", totalAdded10, totalWritten, tombstoneCount);
         } catch (Exception e){
             log.error("POST transformMessages error", e);
         }
